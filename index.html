@@ -1,0 +1,749 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Network Forensic Dashboard</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <div id="securityNotification" class="notification" style="display:none;"></div>
+
+    <header>
+        <div class="header-content">
+            <div>
+                <h1>Network Forensic Tool</h1>
+                <p>Attack Analysis and Digital Forensic Investigation</p>
+            </div>
+            <div id="connectionStatus" class="status">Checking connection...</div>
+        </div>
+
+        <div class="upload-section">
+            <input type="file" id="pcapFile" accept=".pcap,.pcapng">
+            <button id="analyzeButton" onclick="uploadPCAP()">Analyze PCAP File</button>
+            <span id="uploadStatus"></span>
+        </div>
+    </header>
+
+    <main>
+
+        <section class="cards">
+            <div class="card">
+                <h3>Packets Analyzed</h3>
+                <p id="packets">0</p>
+            </div>
+            <div class="card">
+                <h3>Alerts Found</h3>
+                <p id="alerts">0</p>
+            </div>
+            <div class="card">
+                <h3>Forensic Records</h3>
+                <p id="records">0</p>
+            </div>
+        </section>
+
+        <section class="panel">
+            <h2>Network Traffic Overview</h2>
+
+            <div class="analytics-cards">
+                <div class="analytics-card total">
+                    <h3>TCP Packets</h3>
+                    <p id="tcpCount">0</p>
+                </div>
+                <div class="analytics-card medium">
+                    <h3>UDP Packets</h3>
+                    <p id="udpCount">0</p>
+                </div>
+                <div class="analytics-card low">
+                    <h3>Normal Packets</h3>
+                    <p id="normalCount">0</p>
+                </div>
+                <div class="analytics-card high">
+                    <h3>Suspicious Packets</h3>
+                    <p id="suspiciousCount">0</p>
+                </div>
+            </div>
+
+            <h3>Protocol Distribution</h3>
+            <div id="protocolDistribution">No protocol data available.</div>
+
+            <h3>Analysis Information</h3>
+            <p>Last analysis: <strong id="lastAnalysis">Not available</strong></p>
+            <p>Uploaded file: <strong id="uploadedFileName">Not available</strong></p>
+            <p>Evidence SHA-256: <code id="evidenceHash">Not calculated</code></p>
+        </section>
+
+        <section class="panel">
+            <h2>Security Analytics</h2>
+
+            <div class="analytics-cards">
+                <div class="analytics-card high">
+                    <h3>High Severity</h3>
+                    <p id="highCount">0</p>
+                </div>
+                <div class="analytics-card medium">
+                    <h3>Medium Severity</h3>
+                    <p id="mediumCount">0</p>
+                </div>
+                <div class="analytics-card low">
+                    <h3>Low Severity</h3>
+                    <p id="lowCount">0</p>
+                </div>
+                <div class="analytics-card total">
+                    <h3>Total Alerts</h3>
+                    <p id="totalSeverityCount">0</p>
+                </div>
+            </div>
+
+            <h3>Severity Distribution</h3>
+
+            <div class="severity-row">
+                <span>High</span>
+                <div class="progress-track">
+                    <div id="highBar" class="progress-bar high-bar"></div>
+                </div>
+                <span id="highPercent">0%</span>
+            </div>
+
+            <div class="severity-row">
+                <span>Medium</span>
+                <div class="progress-track">
+                    <div id="mediumBar" class="progress-bar medium-bar"></div>
+                </div>
+                <span id="mediumPercent">0%</span>
+            </div>
+
+            <div class="severity-row">
+                <span>Low</span>
+                <div class="progress-track">
+                    <div id="lowBar" class="progress-bar low-bar"></div>
+                </div>
+                <span id="lowPercent">0%</span>
+            </div>
+        </section>
+
+        <section class="panel">
+            <h2>Attack Detection Report</h2>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>S.No</th>
+                            <th>Attack Type</th>
+                            <th>Severity</th>
+                            <th>Source IP</th>
+                            <th>Destination IP</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody id="attackData">
+                        <tr><td colspan="6">Loading attack data...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section class="panel">
+            <h2>Forensic Timeline</h2>
+
+            <div class="filter-controls">
+                <input type="search" id="packetSearch"
+                    placeholder="Search source IP or destination IP...">
+
+                <select id="protocolFilter">
+                    <option value="all">All Protocols</option>
+                    <option value="TCP">TCP</option>
+                    <option value="UDP">UDP</option>
+                    <option value="ICMP">ICMP</option>
+                    <option value="OTHER">Other</option>
+                </select>
+
+                <select id="statusFilter">
+                    <option value="all">All Packets</option>
+                    <option value="suspicious">Suspicious Only</option>
+                    <option value="normal">Normal Only</option>
+                </select>
+            </div>
+
+            <p id="filterSummary">Loading packet records...</p>
+
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Packet No.</th>
+                            <th>Timestamp</th>
+                            <th>Source IP</th>
+                            <th>Destination IP</th>
+                            <th>Protocol</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="forensicData">
+                        <tr><td colspan="6">Loading forensic records...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="pagination-controls">
+                <button id="previousPage" type="button">Previous</button>
+                <span id="pageInfo">Page 1</span>
+                <button id="nextPage" type="button">Next</button>
+                <label for="pageSize">Rows:</label>
+                <select id="pageSize">
+                    <option value="50">50</option>
+                    <option value="100" selected>100</option>
+                    <option value="250">250</option>
+                </select>
+            </div>
+        </section>
+
+        <section class="panel">
+            <h2>Reports and Downloads</h2>
+            <div class="button-group">
+                <button id="downloadButton" onclick="downloadReport()">Download JSON Report</button>
+                <button id="pdfButton" onclick="downloadPDFReport()">Download PDF Report</button>
+            </div>
+        </section>
+
+    </main>
+
+    <footer>
+        <p>Network Forensic Tool | Attack Analysis and Digital Forensic Investigation</p>
+    </footer>
+
+<script>
+const API_URL = "http://127.0.0.1:5000";
+
+let allForensicRecords = [];
+let currentPage = 1;
+let rowsPerPage = 100;
+let lastUploadedFile = "Not available";
+let lastAnalysisTime = "Not available";
+let lastEvidenceHash = "Not calculated";
+
+function getValue(object, keys, fallback = "N/A") {
+    for (const key of keys) {
+        if (object && object[key] !== undefined && object[key] !== null) {
+            return object[key];
+        }
+    }
+    return fallback;
+}
+
+function findArray(data, keys) {
+    if (Array.isArray(data)) return data;
+    if (!data || typeof data !== "object") return [];
+
+    for (const key of keys) {
+        if (Array.isArray(data[key])) return data[key];
+    }
+
+    if (data.data && Array.isArray(data.data)) return data.data;
+    if (data.results && Array.isArray(data.results)) return data.results;
+
+    return [];
+}
+
+function isSuspicious(record) {
+    const value = record.suspicious_source ??
+        record.is_suspicious ??
+        record.suspicious ??
+        false;
+
+    return value === true || value === 1 || value === "true";
+}
+
+function normalizeProtocol(record) {
+    const value = getValue(record, [
+        "protocol", "protocol_name", "transport_protocol", "proto"
+    ], "");
+
+    const protocol = String(value).toUpperCase().trim();
+
+    if (protocol === "TCP" || protocol === "6") return "TCP";
+    if (protocol === "UDP" || protocol === "17") return "UDP";
+    if (protocol === "ICMP" || protocol === "1") return "ICMP";
+
+    return "OTHER";
+}
+
+function updateAnalysisInfo(info = {}) {
+    if (info.last_analysis) {
+        lastAnalysisTime = new Date(info.last_analysis).toLocaleString();
+    }
+
+    if (info.uploaded_file) {
+        lastUploadedFile = info.uploaded_file;
+    }
+
+    if (info.evidence_sha256) {
+        lastEvidenceHash = info.evidence_sha256;
+    }
+
+    document.getElementById("lastAnalysis").textContent = lastAnalysisTime;
+    document.getElementById("uploadedFileName").textContent = lastUploadedFile;
+    document.getElementById("evidenceHash").textContent = lastEvidenceHash;
+}
+
+function renderNetworkOverview(records) {
+    let tcp = 0, udp = 0, icmp = 0, other = 0, suspicious = 0;
+
+    records.forEach(record => {
+        const protocol = normalizeProtocol(record);
+
+        if (protocol === "TCP") tcp++;
+        else if (protocol === "UDP") udp++;
+        else if (protocol === "ICMP") icmp++;
+        else other++;
+
+        if (isSuspicious(record)) suspicious++;
+    });
+
+    document.getElementById("tcpCount").textContent = tcp;
+    document.getElementById("udpCount").textContent = udp;
+    document.getElementById("suspiciousCount").textContent = suspicious;
+    document.getElementById("normalCount").textContent =
+        Math.max(0, records.length - suspicious);
+
+    const distribution = document.getElementById("protocolDistribution");
+    distribution.replaceChildren();
+
+    [
+        ["TCP", tcp, "#2563eb"],
+        ["UDP", udp, "#7c3aed"],
+        ["ICMP", icmp, "#ea580c"],
+        ["Other", other, "#64748b"]
+    ].forEach(([name, count, color]) => {
+        const line = document.createElement("div");
+        line.style.margin = "12px 0";
+
+        const label = document.createElement("p");
+        label.textContent = `${name}: ${count} packets`;
+        line.appendChild(label);
+
+        const track = document.createElement("div");
+        track.style.height = "12px";
+        track.style.background = "#e2e8f0";
+        track.style.borderRadius = "8px";
+        track.style.overflow = "hidden";
+
+        const bar = document.createElement("div");
+        bar.style.height = "100%";
+        bar.style.width = records.length ? (count / records.length * 100) + "%" : "0%";
+        bar.style.background = color;
+
+        track.appendChild(bar);
+        line.appendChild(track);
+        distribution.appendChild(line);
+    });
+
+    // Do not overwrite analysis info here.
+    updateAnalysisInfo();
+}
+
+function getFilteredRecords() {
+    const search = document.getElementById("packetSearch").value.trim().toLowerCase();
+    const protocol = document.getElementById("protocolFilter").value;
+    const status = document.getElementById("statusFilter").value;
+
+    return allForensicRecords.filter(record => {
+        const source = String(getValue(record, ["source_ip", "src_ip", "src"], "")).toLowerCase();
+        const destination = String(getValue(record, ["destination_ip", "dst_ip", "dst"], "")).toLowerCase();
+
+        const matchesSearch = !search || source.includes(search) || destination.includes(search);
+        const matchesProtocol = protocol === "all" || normalizeProtocol(record) === protocol;
+        const suspicious = isSuspicious(record);
+        const matchesStatus = status === "all" ||
+            (status === "suspicious" && suspicious) ||
+            (status === "normal" && !suspicious);
+
+        return matchesSearch && matchesProtocol && matchesStatus;
+    });
+}
+
+function createCell(value) {
+    const cell = document.createElement("td");
+    cell.textContent = value === undefined || value === null ? "N/A" : String(value);
+    return cell;
+}
+
+function renderForensicTable(records) {
+    const tbody = document.getElementById("forensicData");
+    tbody.replaceChildren();
+
+    if (!records.length) {
+        const row = tbody.insertRow();
+        const cell = row.insertCell();
+        cell.colSpan = 6;
+        cell.textContent = "No forensic records found.";
+        return;
+    }
+
+    records.forEach((record, index) => {
+        const row = tbody.insertRow();
+
+        row.appendChild(createCell(getValue(record, ["packet_number", "packet_no", "packet_id", "packet"], index + 1)));
+        row.appendChild(createCell(getValue(record, ["timestamp", "time", "datetime"])));
+        row.appendChild(createCell(getValue(record, ["source_ip", "src_ip", "src"])));
+        row.appendChild(createCell(getValue(record, ["destination_ip", "dst_ip", "dst"])));
+        row.appendChild(createCell(getValue(record, ["protocol", "protocol_name"])));
+
+        const suspicious = isSuspicious(record);
+        const statusCell = createCell(suspicious ? "Suspicious" : "Normal");
+
+        if (suspicious) statusCell.classList.add("severity-high");
+        row.appendChild(statusCell);
+    });
+}
+
+function renderFilteredTimeline() {
+    const filtered = getFilteredRecords();
+
+    // Always read the current dropdown value
+    const pageSizeElement = document.getElementById("pageSize");
+    rowsPerPage = Number(pageSizeElement.value) || 100;
+
+    const totalPages = Math.max(
+        1,
+        Math.ceil(filtered.length / rowsPerPage)
+    );
+
+    // Keep the current page within valid limits
+    currentPage = Math.max(1, Math.min(currentPage, totalPages));
+
+    const start = (currentPage - 1) * rowsPerPage;
+    const end = start + rowsPerPage;
+
+    // Display only the records for the current page
+    const pageRecords = filtered.slice(start, end);
+
+    renderForensicTable(pageRecords);
+
+    document.getElementById("pageInfo").textContent =
+        `Page ${currentPage} of ${totalPages}`;
+
+    document.getElementById("filterSummary").textContent =
+        `Showing ${pageRecords.length} of ${filtered.length} matching records (${allForensicRecords.length} total).`;
+
+    document.getElementById("previousPage").disabled =
+        currentPage <= 1;
+
+    document.getElementById("nextPage").disabled =
+        currentPage >= totalPages;
+}
+
+function renderAttackTable(alerts) {
+    const tbody = document.getElementById("attackData");
+    tbody.replaceChildren();
+
+    if (!alerts.length) {
+        const row = tbody.insertRow();
+        const cell = row.insertCell();
+        cell.colSpan = 6;
+        cell.textContent = "No alerts detected.";
+        return;
+    }
+
+    alerts.forEach((alert, index) => {
+        const row = tbody.insertRow();
+        row.appendChild(createCell(index + 1));
+        row.appendChild(createCell(getValue(alert, ["attack_type", "attack", "type", "alert_type"])));
+
+        const severityCell = createCell(getValue(alert, ["severity", "level"], "Unknown"));
+        severityCell.classList.add("severity-" + severityCell.textContent.toLowerCase());
+        row.appendChild(severityCell);
+
+        row.appendChild(createCell(getValue(alert, ["source_ip", "src_ip", "src"])));
+        row.appendChild(createCell(getValue(alert, ["destination_ip", "dst_ip", "dst"])));
+        row.appendChild(createCell(getValue(alert, ["description", "details", "message"])));
+    });
+}
+
+function renderAttackChart(alerts) {
+    let high = 0, medium = 0, low = 0;
+
+    alerts.forEach(alert => {
+        const severity = String(getValue(alert, ["severity", "level"], "")).toLowerCase();
+
+        if (severity === "high" || severity === "critical") high++;
+        else if (severity === "medium" || severity === "moderate") medium++;
+        else if (severity === "low") low++;
+    });
+
+    const total = alerts.length;
+    document.getElementById("highCount").textContent = high;
+    document.getElementById("mediumCount").textContent = medium;
+    document.getElementById("lowCount").textContent = low;
+    document.getElementById("totalSeverityCount").textContent = total;
+
+    [
+        ["high", high],
+        ["medium", medium],
+        ["low", low]
+    ].forEach(([name, count]) => {
+        const percent = total ? count / total * 100 : 0;
+        document.getElementById(name + "Bar").style.width = percent + "%";
+        document.getElementById(name + "Percent").textContent = percent.toFixed(1) + "%";
+    });
+}
+
+function showSecurityNotification(alerts) {
+    const notification = document.getElementById("securityNotification");
+    notification.replaceChildren();
+
+    if (!alerts.length) {
+        notification.style.display = "none";
+        return;
+    }
+
+    notification.style.display = "block";
+
+    const heading = document.createElement("h3");
+    heading.textContent = `Security Notice: ${alerts.length} alert(s) detected`;
+    notification.appendChild(heading);
+
+    alerts.slice(0, 3).forEach(alert => {
+        const paragraph = document.createElement("p");
+        paragraph.textContent =
+            `${getValue(alert, ["attack_type", "attack", "type", "alert_type"], "Suspicious Activity")} — Severity: ${getValue(alert, ["severity", "level"], "Unknown")}`;
+        notification.appendChild(paragraph);
+    });
+
+    if (alerts.length > 3) {
+        const summary = document.createElement("p");
+        summary.textContent = `Showing 3 of ${alerts.length} alerts. View the report below for all alerts.`;
+        notification.appendChild(summary);
+    }
+}
+
+async function uploadPCAP() {
+    const fileInput = document.getElementById("pcapFile");
+    const status = document.getElementById("uploadStatus");
+    const button = document.getElementById("analyzeButton");
+
+    if (!fileInput.files.length) {
+        status.textContent = "Please select a PCAP file.";
+        return;
+    }
+
+    const file = fileInput.files[0];
+    const extension = file.name.substring(file.name.lastIndexOf(".")).toLowerCase();
+
+    if (![".pcap", ".pcapng"].includes(extension)) {
+        status.textContent = "Please select a .pcap or .pcapng file.";
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    button.disabled = true;
+    status.textContent = "Analyzing file. Please wait...";
+
+    try {
+        const response = await fetch(`${API_URL}/api/analyze`, {
+            method: "POST",
+            body: formData
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+            throw new Error(result.error || result.message || "Analysis failed.");
+        }
+
+        // FIX: Read the metadata returned by the backend.
+        const info = result.analysis_info || {};
+
+        lastAnalysisTime = info.last_analysis
+            ? new Date(info.last_analysis).toLocaleString()
+            : "Not available";
+
+        lastUploadedFile = info.uploaded_file || file.name;
+        lastEvidenceHash = info.evidence_sha256 || "Not available";
+
+        updateAnalysisInfo(info);
+
+        status.textContent = result.message || "Analysis completed successfully.";
+
+        await loadDashboard();
+        updateAnalysisInfo(info);
+
+    } catch (error) {
+        console.error("Upload error:", error);
+        status.textContent = "Error: " + error.message;
+    } finally {
+        button.disabled = false;
+    }
+}
+
+async function loadDashboard() {
+    const status = document.getElementById("connectionStatus");
+
+    try {
+        const [attackResponse, forensicResponse] = await Promise.all([
+            fetch(`${API_URL}/api/attacks`),
+            fetch(`${API_URL}/api/forensics`)
+        ]);
+
+        if (!attackResponse.ok || !forensicResponse.ok) {
+            throw new Error("Unable to retrieve dashboard data.");
+        }
+
+        const attackData = await attackResponse.json();
+        const forensicData = await forensicResponse.json();
+
+        const alerts = findArray(attackData, [
+            "alerts", "attacks", "attack_alerts", "results"
+        ]);
+
+        const records = findArray(forensicData, [
+            "timeline", "forensics", "records", "forensic_records",
+            "packet_evidence", "results"
+        ]);
+
+        allForensicRecords = records;
+
+        document.getElementById("packets").textContent =
+            getValue(forensicData, ["total_packets", "packets_analyzed", "totalPackets"], records.length);
+
+        document.getElementById("alerts").textContent =
+            getValue(attackData, ["alerts_found", "total_alerts", "totalAlerts"], alerts.length);
+
+        document.getElementById("records").textContent =
+            getValue(forensicData, ["total_records", "total_packets", "totalRecords"], records.length);
+
+        renderAttackChart(alerts);
+        renderAttackTable(alerts);
+        renderNetworkOverview(records);
+        renderFilteredTimeline();
+        showSecurityNotification(alerts);
+
+        status.textContent = "Backend Connected";
+        status.classList.add("connected");
+        status.classList.remove("disconnected");
+
+    } catch (error) {
+        console.error("Dashboard error:", error);
+        status.textContent = "Backend Disconnected";
+        status.classList.add("disconnected");
+        status.classList.remove("connected");
+    }
+}
+
+async function downloadReport() {
+    try {
+        const [attackResponse, forensicResponse] = await Promise.all([
+            fetch(`${API_URL}/api/attacks`),
+            fetch(`${API_URL}/api/forensics`)
+        ]);
+
+        if (!attackResponse.ok || !forensicResponse.ok) {
+            throw new Error("Could not retrieve report data.");
+        }
+
+        const attacks = await attackResponse.json();
+        const forensics = await forensicResponse.json();
+
+        const report = {
+            generated_at: new Date().toISOString(),
+            project: "Network Forensic Tool",
+            analysis_info: {
+                last_analysis: lastAnalysisTime,
+                uploaded_file: lastUploadedFile,
+                evidence_sha256: lastEvidenceHash
+            },
+            attack_report: attacks,
+            forensic_timeline: forensics
+        };
+
+        const blob = new Blob([JSON.stringify(report, null, 2)], {
+            type: "application/json"
+        });
+
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = "network_forensic_report.json";
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        URL.revokeObjectURL(url);
+
+    } catch (error) {
+        console.error("Download error:", error);
+        alert("Unable to download the report: " + error.message);
+    }
+}
+
+async function downloadPDFReport() {
+    try {
+        const response = await fetch(`${API_URL}/api/download-pdf`);
+
+        if (!response.ok) {
+            let message = "PDF report download failed.";
+            try {
+                const result = await response.json();
+                message = result.error || result.message || message;
+            } catch (_) {}
+            throw new Error(message);
+        }
+
+        const blob = await response.blob();
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = "network_forensic_report.pdf";
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        URL.revokeObjectURL(url);
+
+    } catch (error) {
+        console.error("PDF download error:", error);
+        alert("Unable to download PDF: " + error.message);
+    }
+}
+
+document.getElementById("packetSearch").addEventListener("input", () => {
+    currentPage = 1;
+    renderFilteredTimeline();
+});
+
+document.getElementById("protocolFilter").addEventListener("change", () => {
+    currentPage = 1;
+    renderFilteredTimeline();
+});
+
+document.getElementById("statusFilter").addEventListener("change", () => {
+    currentPage = 1;
+    renderFilteredTimeline();
+});
+
+document.getElementById("previousPage").addEventListener("click", () => {
+    if (currentPage > 1) {
+        currentPage--;
+        renderFilteredTimeline();
+    }
+});
+
+document.getElementById("nextPage").addEventListener("click", () => {
+    currentPage++;
+    renderFilteredTimeline();
+});
+
+document.getElementById("pageSize").addEventListener("change", event => {
+    rowsPerPage = Number(event.target.value) || 100;
+    currentPage = 1;
+    renderFilteredTimeline();
+});
+
+document.addEventListener("DOMContentLoaded", loadDashboard);
+</script>
+
+</body>
+</html>
